@@ -7,4 +7,5 @@ Price builder
 Example how to run auth/core tests
 
 `cd src/auth/core/`
+
 `go test ./... -coverprofile=c.out`
