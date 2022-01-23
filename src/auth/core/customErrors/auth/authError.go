@@ -22,7 +22,7 @@ func (f InvalidAuthReference) Error() string {
 type ErrorGettingAuthDatabaseRecord string
 
 func (f ErrorGettingAuthDatabaseRecord) Error() string {
-	return fmt.Sprintf("Error getting client credentials. %s", f)
+	return fmt.Sprintf("Error getting client credentials. %s", f.Error())
 }
 
 // Client not found on database
