@@ -1,10 +1,11 @@
 package domain
 
 import (
-	authErrors "core/customerror/auth"
 	"crypto/rand"
 	"fmt"
 	"time"
+
+	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
 )
 
 type Auth struct {

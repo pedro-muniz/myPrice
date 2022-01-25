@@ -1,11 +1,13 @@
 package authorize
 
 import (
-	authErrors "core/customerror/auth"
-	domain "core/domain"
 	"errors"
 	"testing"
 	"time"
+
+	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
+
+	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
 )
 
 type MockAuthRepository struct {

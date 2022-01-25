@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"fmt"
 	"sync"
 
-	domain "core/domain"
+	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
 )
 
 type AuthRepository struct {
@@ -21,11 +22,11 @@ func GetInstance() *AuthRepository {
 }
 
 func (this *AuthRepository) Get(clientId string, clientSecret string) (*domain.Auth, error) {
-	fmt.print("test ok")
+	fmt.Println("test ok")
 	return nil, nil
 }
 
 func (this *AuthRepository) Save(auth *domain.Auth) error {
-	fmt.print("test save ok")
+	fmt.Println("test save ok")
 	return nil
 }

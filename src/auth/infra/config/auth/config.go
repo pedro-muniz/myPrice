@@ -1,13 +1,13 @@
 package auth
 
 import (
-	authRepository "infra/persistence/repository/neo4j/auth"
+	authRepo "github.com/pedro-muniz/myPrice/auth/infra/persistence/repository/neo4j/auth"
 )
 
 type AuthConfig struct {
-	repo AuthRepository
+	repo *authRepo.AuthRepository
 }
 
 func (this *AuthConfig) CreateAuthorizeUseCase() {
-	this.repo = authRepository.GetInstance()
+	this.repo = authRepo.GetInstance()
 }

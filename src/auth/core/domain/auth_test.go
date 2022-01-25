@@ -1,8 +1,9 @@
 package domain
 
 import (
-	authErrors "core/customerror/auth"
 	"testing"
+
+	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
 )
 
 //test GenerateToken with an invalid auth object

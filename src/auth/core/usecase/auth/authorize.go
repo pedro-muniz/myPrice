@@ -1,11 +1,12 @@
 package authorize
 
 import (
-	authErrors "core/customerror/auth"
-	domain "core/domain"
-	publisher "core/port/publisher"
-	repository "core/port/repository"
 	"sync"
+
+	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
+	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
+	publisher "github.com/pedro-muniz/myPrice/auth/core/port/publisher"
+	repository "github.com/pedro-muniz/myPrice/auth/core/port/repository"
 )
 
 type Authorize struct {
