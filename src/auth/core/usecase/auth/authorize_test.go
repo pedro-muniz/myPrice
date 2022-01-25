@@ -1,10 +1,11 @@
-package usecases
+package authorize
 
 import (
-	authErrors "core/customErrors/auth"
+	authErrors "core/customerror/auth"
 	domain "core/domain"
 	"errors"
 	"testing"
+	"time"
 )
 
 type MockAuthRepository struct {
@@ -28,17 +29,31 @@ func (repository *MockAuthRepository) Save(auth *domain.Auth) error {
 	return nil
 }
 
+type MockAuthPublisher struct {
+	FakePublish func(token string, expiringAt time.Time) error
+}
+
+func (publisher *MockAuthPublisher) Publish(token string, expiringAt time.Time) error {
+	if publisher.FakePublish != nil {
+		return publisher.FakePublish(token, expiringAt)
+	}
+
+	return nil
+}
+
+var mockedRepo *MockAuthRepository = &MockAuthRepository{}
+var mockedPub *MockAuthPublisher = &MockAuthPublisher{}
+
 func TestUseCaseExecute_invalidAuthObject_shouldReturnAnError(t *testing.T) {
 	//arrange
 	expectedError := authErrors.InvalidAuthReference("")
-	repository := &MockAuthRepository{}
-	authorizeUseCase := &Authorize{Auth: nil, AuthRepository: repository}
+	authorizeUseCase := &Authorize{Auth: nil, AuthRepository: mockedRepo, AuthPublisher: mockedPub}
 
 	//act
-	token, authError := authorizeUseCase.Execute()
+	authToken, authError := authorizeUseCase.Execute()
 
 	//assert
-	if len(token) > 0 {
+	if authToken != nil {
 		t.Error("The authorize returned a strange token")
 	}
 
@@ -63,13 +78,13 @@ func TestUseCaseExecute_errorReturningDatabaseRecord_shouldReturnAnError(t *test
 		},
 	}
 
-	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository}
+	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository, AuthPublisher: mockedPub}
 
 	//act
-	token, authError := authorizeUseCase.Execute()
+	authToken, authError := authorizeUseCase.Execute()
 
 	//assert
-	if len(token) > 0 {
+	if authToken != nil {
 		t.Error("The authorize returned a strange token")
 	}
 
@@ -88,13 +103,13 @@ func TestUseCaseExecute_clientNotFound_shouldReturnAnError(t *testing.T) {
 		},
 	}
 
-	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository}
+	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository, AuthPublisher: mockedPub}
 
 	//act
-	token, authError := authorizeUseCase.Execute()
+	authToken, authError := authorizeUseCase.Execute()
 
 	//assert
-	if len(token) > 0 {
+	if authToken != nil {
 		t.Error("The authorize returned a strange token")
 	}
 
@@ -112,15 +127,23 @@ func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
 		},
 	}
 
-	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository}
+	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository, AuthPublisher: mockedPub}
 
 	//act
-	token, _ := authorizeUseCase.Execute()
+	authToken, _ := authorizeUseCase.Execute()
 
 	//assert
-	if len(token) <= 0 {
+	if authToken == nil || len(authToken.Token) <= 0 {
 		t.Error("The authorize didn't return the token")
 	}
 
-	t.Log(token)
+	if len(authToken.ClientId) <= 0 {
+		t.Error("The authorize didn't return the clientId")
+	}
+
+	if authToken.ExpiringAt.IsZero() {
+		t.Error("The authorize didn't return the ExpiringAt")
+	}
+
+	t.Log(authToken.Token)
 }
