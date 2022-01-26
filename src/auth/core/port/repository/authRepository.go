@@ -1,7 +1,7 @@
 package repository
 
 import (
-	domain "core/domain"
+	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
 )
 
 //Interface to get users from database

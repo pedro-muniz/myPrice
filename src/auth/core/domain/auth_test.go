@@ -1,8 +1,10 @@
 package domain
 
 import (
-	authErrors "core/customErrors/auth"
 	"testing"
+	"time"
+
+	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
 )
 
 //test GenerateToken with an invalid auth object
@@ -12,7 +14,7 @@ func TestGenerateToken_invalidClientId_shouldReturnAnError(t *testing.T) {
 	auth := &Auth{}
 
 	//act
-	token, authError := auth.GenerateToken()
+	token, authError := auth.generateToken()
 
 	//assert
 	if len(token) > 0 {
@@ -34,7 +36,7 @@ func TestGenerateToken_validClientId_shouldReturnToken(t *testing.T) {
 	auth.ClientId = "testing"
 
 	//act
-	token, authError := auth.GenerateToken()
+	token, authError := auth.generateToken()
 
 	//assert
 	if authError != nil {
@@ -46,4 +48,35 @@ func TestGenerateToken_validClientId_shouldReturnToken(t *testing.T) {
 	}
 
 	t.Log(token)
+}
+
+func TestGenerateAuthToken_validData_shouldReturnAuthTokenStruct(t *testing.T) {
+	//arrange
+	auth := &Auth{}
+	auth.ClientId = "testing"
+
+	//act
+	authToken, err := auth.GetAuthToken()
+
+	//assert
+	if err != nil {
+		t.Errorf("Error generating token %s", err.Error())
+	}
+
+	if authToken == nil {
+		t.Errorf("Error generating token, the method didn't return the token structure")
+	}
+
+	if len(authToken.ClientId) <= 0 {
+		t.Errorf("Error generating token, the clientId is invalid")
+	}
+
+	if authToken.ExpiringAt <= time.Hour {
+		t.Errorf("Error generating token, invalid expiring date %s", authToken.ExpiringAt)
+	}
+
+	if len(authToken.Token) <= 0 {
+		t.Errorf("Error generating token, invalid token")
+	}
+
 }
