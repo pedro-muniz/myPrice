@@ -17,7 +17,7 @@ type Auth struct {
 type AuthToken struct {
 	ClientId   string
 	Token      string
-	ExpiringAt time.Time
+	ExpiringAt time.Duration
 }
 
 //Generate single user token
@@ -38,9 +38,11 @@ func (this *Auth) GetAuthToken() (*AuthToken, error) {
 		return nil, err
 	}
 
+	expiringAt := 1 + time.Hour
+
 	return &AuthToken{
 		ClientId:   this.ClientId,
 		Token:      token,
-		ExpiringAt: time.Now(),
+		ExpiringAt: expiringAt,
 	}, nil
 }

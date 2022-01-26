@@ -1,6 +1,7 @@
 package authorize
 
 import (
+	"fmt"
 	"sync"
 
 	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
@@ -10,8 +11,6 @@ import (
 )
 
 type Authorize struct {
-	Auth           *domain.Auth
-	AuthToken      *domain.AuthToken
 	AuthRepository repository.AuthRepository
 	AuthPublisher  publisher.AuthPublisher
 }
@@ -19,32 +18,36 @@ type Authorize struct {
 var once sync.Once
 var instance *Authorize
 
-func GetInstance() *Authorize {
+func GetInstance(authRepository repository.AuthRepository,
+	authPublisher publisher.AuthPublisher,
+) *Authorize {
 	once.Do(func() {
-		instance = &Authorize{}
+		instance = &Authorize{AuthRepository: authRepository,
+			AuthPublisher: authPublisher,
+		}
 	})
 
 	return instance
 }
 
 //Authorize the client and return a the auth token
-func (this *Authorize) Execute() (*domain.AuthToken, error) {
-
+func (this *Authorize) Execute(auth *domain.Auth) (*domain.AuthToken, error) {
 	//Validate the token + secret on database
-	if this.Auth == nil {
+	if auth == nil {
 		return nil, authErrors.InvalidAuthReference("")
 	}
 
-	client, err := this.AuthRepository.Get(this.Auth.ClientId, this.Auth.ClientSecret)
+	client, err := this.AuthRepository.Get(auth.ClientId, auth.ClientSecret)
 	if err != nil {
 		return nil, authErrors.ErrorGettingAuthDatabaseRecord(err.Error())
 	}
 
 	if client == nil {
-		return nil, authErrors.ClientNotFound("")
+		fmt.Println("TODO: implement client database")
+		//return nil, authErrors.ClientNotFound("")
 	}
 
-	authToken, err := this.Auth.GetAuthToken()
+	authToken, err := auth.GetAuthToken()
 	if err != nil {
 		return nil, err
 	}

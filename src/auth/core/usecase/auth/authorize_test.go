@@ -32,15 +32,24 @@ func (repository *MockAuthRepository) Save(auth *domain.Auth) error {
 }
 
 type MockAuthPublisher struct {
-	FakePublish func(token string, expiringAt time.Time) error
+	FakePublish func(token string, expiringAt time.Duration) error
+	FakeGet     func(token string) (*domain.AuthToken, error)
 }
 
-func (publisher *MockAuthPublisher) Publish(token string, expiringAt time.Time) error {
+func (publisher *MockAuthPublisher) Publish(token string, expiringAt time.Duration) error {
 	if publisher.FakePublish != nil {
 		return publisher.FakePublish(token, expiringAt)
 	}
 
 	return nil
+}
+
+func (publisher *MockAuthPublisher) Get(token string) (*domain.AuthToken, error) {
+	if publisher.FakeGet != nil {
+		return publisher.FakeGet(token)
+	}
+
+	return nil, nil
 }
 
 var mockedRepo *MockAuthRepository = &MockAuthRepository{}
@@ -49,10 +58,10 @@ var mockedPub *MockAuthPublisher = &MockAuthPublisher{}
 func TestUseCaseExecute_invalidAuthObject_shouldReturnAnError(t *testing.T) {
 	//arrange
 	expectedError := authErrors.InvalidAuthReference("")
-	authorizeUseCase := &Authorize{Auth: nil, AuthRepository: mockedRepo, AuthPublisher: mockedPub}
+	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: mockedPub}
 
 	//act
-	authToken, authError := authorizeUseCase.Execute()
+	authToken, authError := authorizeUseCase.Execute(nil)
 
 	//assert
 	if authToken != nil {
@@ -80,10 +89,10 @@ func TestUseCaseExecute_errorReturningDatabaseRecord_shouldReturnAnError(t *test
 		},
 	}
 
-	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository, AuthPublisher: mockedPub}
+	authorizeUseCase := &Authorize{AuthRepository: repository, AuthPublisher: mockedPub}
 
 	//act
-	authToken, authError := authorizeUseCase.Execute()
+	authToken, authError := authorizeUseCase.Execute(auth)
 
 	//assert
 	if authToken != nil {
@@ -105,10 +114,10 @@ func TestUseCaseExecute_clientNotFound_shouldReturnAnError(t *testing.T) {
 		},
 	}
 
-	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository, AuthPublisher: mockedPub}
+	authorizeUseCase := &Authorize{AuthRepository: repository, AuthPublisher: mockedPub}
 
 	//act
-	authToken, authError := authorizeUseCase.Execute()
+	authToken, authError := authorizeUseCase.Execute(auth)
 
 	//assert
 	if authToken != nil {
@@ -129,10 +138,10 @@ func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
 		},
 	}
 
-	authorizeUseCase := &Authorize{Auth: auth, AuthRepository: repository, AuthPublisher: mockedPub}
+	authorizeUseCase := &Authorize{AuthRepository: repository, AuthPublisher: mockedPub}
 
 	//act
-	authToken, _ := authorizeUseCase.Execute()
+	authToken, _ := authorizeUseCase.Execute(auth)
 
 	//assert
 	if authToken == nil || len(authToken.Token) <= 0 {
@@ -143,7 +152,7 @@ func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
 		t.Error("The authorize didn't return the clientId")
 	}
 
-	if authToken.ExpiringAt.IsZero() {
+	if authToken.ExpiringAt <= 0 {
 		t.Error("The authorize didn't return the ExpiringAt")
 	}
 

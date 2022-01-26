@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 
 	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
 )
@@ -70,8 +71,8 @@ func TestGenerateAuthToken_validData_shouldReturnAuthTokenStruct(t *testing.T) {
 		t.Errorf("Error generating token, the clientId is invalid")
 	}
 
-	if authToken.ExpiringAt.IsZero() {
-		t.Errorf("Error generating token, invalid expiring date")
+	if authToken.ExpiringAt <= time.Hour {
+		t.Errorf("Error generating token, invalid expiring date %s", authToken.ExpiringAt)
 	}
 
 	if len(authToken.Token) <= 0 {
