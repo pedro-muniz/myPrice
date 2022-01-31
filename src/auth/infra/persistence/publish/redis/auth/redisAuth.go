@@ -28,10 +28,10 @@ var (
 	ctx = context.Background()
 )
 
-//Set the token and expiringAt to redis
-func (this *RedisAuth) Publish(token string, expiringAt time.Duration) error {
+//Set the token and expiringIn to redis
+func (this *RedisAuth) Publish(token string, expiringIn time.Duration) error {
 	// Last argument is expiration time.
-	err := this.Client.Set(ctx, token, expiringAt.String(), expiringAt).Err()
+	err := this.Client.Set(ctx, token, expiringIn.String(), expiringIn).Err()
 
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (this *RedisAuth) Publish(token string, expiringAt time.Duration) error {
 	return nil
 }
 
-//Get the token and expiringAt to redis
+//Get the token and expiringIn to redis
 func (this *RedisAuth) Get(token string) (*domain.AuthToken, error) {
 	val, err := this.Client.Get(ctx, token).Result()
 	if err != nil {
@@ -50,6 +50,6 @@ func (this *RedisAuth) Get(token string) (*domain.AuthToken, error) {
 	duration, _ := time.ParseDuration(val)
 	return &domain.AuthToken{
 		Token:      token,
-		ExpiringAt: duration,
+		ExpiringIn: duration,
 	}, nil
 }

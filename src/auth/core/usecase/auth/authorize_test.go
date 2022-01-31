@@ -32,13 +32,13 @@ func (repository *MockAuthRepository) Save(auth *domain.Auth) error {
 }
 
 type MockAuthPublisher struct {
-	FakePublish func(token string, expiringAt time.Duration) error
+	FakePublish func(token string, expiringIn time.Duration) error
 	FakeGet     func(token string) (*domain.AuthToken, error)
 }
 
-func (publisher *MockAuthPublisher) Publish(token string, expiringAt time.Duration) error {
+func (publisher *MockAuthPublisher) Publish(token string, expiringIn time.Duration) error {
 	if publisher.FakePublish != nil {
-		return publisher.FakePublish(token, expiringAt)
+		return publisher.FakePublish(token, expiringIn)
 	}
 
 	return nil
@@ -152,8 +152,8 @@ func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
 		t.Error("The authorize didn't return the clientId")
 	}
 
-	if authToken.ExpiringAt <= 0 {
-		t.Error("The authorize didn't return the ExpiringAt")
+	if authToken.ExpiringIn <= 0 {
+		t.Error("The authorize didn't return the ExpiringIn")
 	}
 
 	t.Log(authToken.Token)

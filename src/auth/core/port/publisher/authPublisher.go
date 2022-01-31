@@ -8,6 +8,6 @@ import (
 
 //Interface to get users from database
 type AuthPublisher interface {
-	Publish(token string, expiringAt time.Duration) error
+	Publish(token string, expiringIn time.Duration) error
 	Get(token string) (*domain.AuthToken, error)
 }

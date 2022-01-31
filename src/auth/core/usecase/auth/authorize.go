@@ -1,7 +1,6 @@
 package authorize
 
 import (
-	"fmt"
 	"sync"
 
 	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
@@ -43,8 +42,7 @@ func (this *Authorize) Execute(auth *domain.Auth) (*domain.AuthToken, error) {
 	}
 
 	if client == nil {
-		fmt.Println("TODO: implement client database")
-		//return nil, authErrors.ClientNotFound("")
+		return nil, authErrors.ClientNotFound("")
 	}
 
 	authToken, err := auth.GetAuthToken()
@@ -52,7 +50,7 @@ func (this *Authorize) Execute(auth *domain.Auth) (*domain.AuthToken, error) {
 		return nil, err
 	}
 
-	err = this.AuthPublisher.Publish(authToken.Token, authToken.ExpiringAt)
+	err = this.AuthPublisher.Publish(authToken.Token, authToken.ExpiringIn)
 	if err != nil {
 		return nil, err
 	}

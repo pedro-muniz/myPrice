@@ -71,8 +71,8 @@ func TestGenerateAuthToken_validData_shouldReturnAuthTokenStruct(t *testing.T) {
 		t.Errorf("Error generating token, the clientId is invalid")
 	}
 
-	if authToken.ExpiringAt <= time.Hour {
-		t.Errorf("Error generating token, invalid expiring date %s", authToken.ExpiringAt)
+	if authToken.ExpiringIn <= time.Hour {
+		t.Errorf("Error generating token, invalid expiring date %s", authToken.ExpiringIn)
 	}
 
 	if len(authToken.Token) <= 0 {
