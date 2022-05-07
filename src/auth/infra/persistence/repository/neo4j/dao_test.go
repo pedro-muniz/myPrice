@@ -12,8 +12,8 @@ import (
 func TestDAOWrite_validData_shouldPass(t *testing.T) {
 	//arrange
 	var authModel repository.AuthModel = repository.AuthModel{
-		Name:     "Pedro",
-		Email:    "pmuniz09@gmail.com",
+		Name:     "Mocked User",
+		Email:    "mocked@email.com",
 		Password: "testing password",
 		Roles:    "admin",
 	}
