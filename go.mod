@@ -15,7 +15,8 @@ require (
 	github.com/go-redis/redismock/v8 v8.0.6 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	github.com/neo4j/neo4j-go-driver/v4 v4.4.2 // indirect
+	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	rsc.io/sampler v1.3.0 // indirect
 )
