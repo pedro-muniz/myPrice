@@ -9,6 +9,7 @@ import (
 )
 
 type Auth struct {
+	ClientName   string
 	ClientId     string
 	ClientSecret string
 	GrantType    string
