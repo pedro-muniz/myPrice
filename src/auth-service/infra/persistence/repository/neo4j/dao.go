@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
-	repository "github.com/pedro-muniz/myPrice/auth/infra/persistence/repository/neo4j/auth"
+	repository "github.com/pedro-muniz/myPrice/auth/infra/persistence/repository/auth"
 )
 
 type DAO struct {
@@ -25,7 +25,7 @@ func (this *DAO) getDriver() (neo4j.Driver, error) {
 	return driver, err
 }
 
-func (this *DAO) Write(authModel repository.AuthModel) (neo4j.Result, error) {
+func (this *DAO) Insert(authModel repository.AuthModel) (neo4j.Result, error) {
 	driver, err := this.getDriver()
 	if err != nil {
 		return nil, err
@@ -50,4 +50,12 @@ func (this *DAO) Write(authModel repository.AuthModel) (neo4j.Result, error) {
 	}
 
 	return records, nil
+}
+
+func (this *DAO) Update(authModel repository.AuthModel) (neo4j.Result, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (this *DAO) Delete(id uint64) (neo4j.Result, error) {
+	return nil, fmt.Errorf("not implemented")
 }

@@ -9,10 +9,14 @@ import (
 )
 
 type Auth struct {
-	ClientName   string
 	ClientId     string
+	ClientName   string
+	ClientEmail	 string
 	ClientSecret string
 	GrantType    string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	LastLoginAt  time.Time
 }
 
 type AuthToken struct {
