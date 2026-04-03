@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	repository "github.com/pedro-muniz/myPrice/auth/infra/persistence/repository/neo4j/auth"
+	repository "github.com/pedro-muniz/myPrice/auth/infra/persistence/repository/auth"
 )
 
 //Warn: This test is not mocking neo4j driver and session
-func TestDAOWrite_validData_shouldPass(t *testing.T) {
+func TestDAOInsert_validData_shouldPass(t *testing.T) {
 	//arrange
 	var authModel repository.AuthModel = repository.AuthModel{
 		Name:     "Mocked User",
@@ -23,7 +23,7 @@ func TestDAOWrite_validData_shouldPass(t *testing.T) {
 		Neo4JPassword: os.Getenv("neo4jPass"),
 	}
 
-	records, err := dao.Write(authModel)
+	records, err := dao.Insert(authModel)
 	fmt.Println(records.Record())
 	if err != nil {
 		fmt.Println(err)
