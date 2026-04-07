@@ -12,19 +12,22 @@ import (
 func TestNewsInfoForCache(t *testing.T) {
 	db, mock := redismock.NewClientMock()
 
-	duration := 1 + time.Hour
 	token := make([]byte, 16)
 	rand.Read(token)
-
 	key := fmt.Sprintf("%x", token)
 
-	mock.ExpectSet(key, duration, duration).SetVal("OK")
-	mock.ExpectGet(key).SetVal("value")
+	expiringIn := time.Hour + 1
+
+	mock.ExpectSet(key, expiringIn.String(), expiringIn).SetVal("OK")
 
 	redisAuth := &RedisAuth{Client: db}
 
-	err := redisAuth.Publish(key, duration)
+	err := redisAuth.Publish(key, expiringIn)
 	if err != nil {
 		t.Errorf("Error running redis-mock %s", err.Error())
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Expectations were not met: %s", err.Error())
 	}
 }

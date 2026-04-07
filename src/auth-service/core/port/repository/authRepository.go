@@ -5,7 +5,7 @@ import (
 )
 
 //Interface to get users from database
-type AuthRepository interface {
-	Get(email string, password string) (*domain.Auth, error)
-	Save(auth *domain.Auth) error
+type IAuthRepository interface {
+	Get(email string, password string) (<-chan *domain.Auth, <-chan error)
+	Save(auth *domain.Auth) <-chan error
 }

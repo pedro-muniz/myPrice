@@ -16,5 +16,5 @@ vendor/
 
 # Environment files
 .env
-/src/auth-service/auth-service/go.sum
-src/auth-service/infra/config/wire/wire_gen.go
+*/**/go.sum
+*/**/wire_gen.go

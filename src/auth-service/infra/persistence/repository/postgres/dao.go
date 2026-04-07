@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"sync"
 
 	_ "github.com/lib/pq"
 	repository "github.com/pedro-muniz/myPrice/auth/infra/persistence/repository/auth"
@@ -14,6 +15,24 @@ type DAO struct {
 	User     string
 	Password string
 	DbName   string
+}
+
+var (
+	instance *DAO
+	once     sync.Once
+)
+
+func GetInstance(host string, port int, user, password, dbName string) *DAO {
+	once.Do(func() {
+		instance = &DAO{
+			Host:     host,
+			Port:     port,
+			User:     user,
+			Password: password,
+			DbName:   dbName,
+		}
+	})
+	return instance
 }
 
 func (this *DAO) getConnection() (*sql.DB, error) {
@@ -46,7 +65,8 @@ func (this *DAO) Insert(authModel repository.AuthModel) (sql.Result, error) {
 	fmt.Println("writing to postgres")
 
 	sqlStatement := `
-	INSERT INTO user_logins.auths (name, email, password, roles, created_at, updated_at, last_login_at)
+	INSERT INTO user_logins.auths (name, email, password, roles, created_at, 
+	updated_at, last_login_at)
 	VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())`
 
 	result, err := db.Exec(sqlStatement, authModel.Name, authModel.Email, authModel.Password, authModel.Roles)

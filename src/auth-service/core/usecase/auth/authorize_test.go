@@ -5,30 +5,39 @@ import (
 	"testing"
 	"time"
 
-	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
-
+	"github.com/golang-jwt/jwt/v5"
 	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
+	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
+	repository "github.com/pedro-muniz/myPrice/auth/core/port/repository"
 )
 
-type MockAuthRepository struct {
-	FakeGet  func(clientId string, clientSecret string) (*domain.Auth, error)
-	FakeSave func(auth *domain.Auth) error
+var _ repository.IAuthRepository = (*TestAuthRepository)(nil)
+
+type TestAuthRepository struct {
+	FakeGet  func(string, string) (<-chan *domain.Auth, <-chan error)
+	FakeSave func(*domain.Auth) <-chan error
 }
 
-func (repository *MockAuthRepository) Get(clientId string, clientSecret string) (*domain.Auth, error) {
-	if repository.FakeGet != nil {
-		return repository.FakeGet(clientId, clientSecret)
+func (m *TestAuthRepository) Get(email string, password string) (<-chan *domain.Auth, <-chan error) {
+	if m.FakeGet != nil {
+		return m.FakeGet(email, password)
 	}
 
-	return nil, nil
+	ac := make(chan *domain.Auth, 1)
+	ec := make(chan error, 1)
+	close(ac)
+	close(ec)
+	return ac, ec
 }
 
-func (repository *MockAuthRepository) Save(auth *domain.Auth) error {
-	if repository.FakeSave != nil {
-		return repository.FakeSave(auth)
+func (m *TestAuthRepository) Save(auth *domain.Auth) <-chan error {
+	if m.FakeSave != nil {
+		return m.FakeSave(auth)
 	}
 
-	return nil
+	ec := make(chan error, 1)
+	close(ec)
+	return ec
 }
 
 type MockAuthPublisher struct {
@@ -52,7 +61,7 @@ func (publisher *MockAuthPublisher) Get(token string) (*domain.AuthToken, error)
 	return nil, nil
 }
 
-var mockedRepo *MockAuthRepository = &MockAuthRepository{}
+var mockedRepo *TestAuthRepository = &TestAuthRepository{}
 var mockedPub *MockAuthPublisher = &MockAuthPublisher{}
 
 func TestUseCaseExecute_invalidAuthObject_shouldReturnAnError(t *testing.T) {
@@ -83,9 +92,11 @@ func TestUseCaseExecute_errorReturningDatabaseRecord_shouldReturnAnError(t *test
 	err := errors.New("error")
 	expectedError := authErrors.ErrorGettingAuthDatabaseRecord(err.Error())
 	auth := &domain.Auth{ClientId: "test", ClientSecret: "Test"}
-	repository := &MockAuthRepository{
-		FakeGet: func(clientId string, clientSecret string) (*domain.Auth, error) {
-			return nil, err
+	repository := &TestAuthRepository{
+		FakeGet: func(email string, password string) (<-chan *domain.Auth, <-chan error) {
+			ec := make(chan error, 1)
+			ec <- err
+			return nil, ec
 		},
 	}
 
@@ -108,9 +119,11 @@ func TestUseCaseExecute_clientNotFound_shouldReturnAnError(t *testing.T) {
 	//arrange
 	expectedError := authErrors.ClientNotFound("")
 	auth := &domain.Auth{ClientId: "test", ClientSecret: "Test"}
-	repository := &MockAuthRepository{
-		FakeGet: func(clientId string, clientSecret string) (*domain.Auth, error) {
-			return nil, nil
+	repository := &TestAuthRepository{
+		FakeGet: func(email string, password string) (<-chan *domain.Auth, <-chan error) {
+			ac := make(chan *domain.Auth, 1)
+			close(ac)
+			return ac, nil
 		},
 	}
 
@@ -132,9 +145,11 @@ func TestUseCaseExecute_clientNotFound_shouldReturnAnError(t *testing.T) {
 func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
 	//arrange
 	auth := &domain.Auth{ClientId: "test", ClientSecret: "Test"}
-	repository := &MockAuthRepository{
-		FakeGet: func(clientId string, clientSecret string) (*domain.Auth, error) {
-			return auth, nil
+	repository := &TestAuthRepository{
+		FakeGet: func(email string, password string) (<-chan *domain.Auth, <-chan error) {
+			ac := make(chan *domain.Auth, 1)
+			ac <- auth
+			return ac, nil
 		},
 	}
 
@@ -157,4 +172,82 @@ func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
 	}
 
 	t.Log(authToken.Token)
+}
+
+func TestUseCaseValidate_tokenNotFoundInRedis_shouldReturnAnError(t *testing.T) {
+	// arrange
+	publisher := &MockAuthPublisher{
+		FakeGet: func(token string) (*domain.AuthToken, error) {
+			return nil, nil // Not found
+		},
+	}
+	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: publisher}
+
+	// act
+	authToken, authError := authorizeUseCase.Validate("any-token")
+
+	// assert
+	if authToken != nil {
+		t.Error("The validate returned a token when it should not")
+	}
+	if authError == nil {
+		t.Error("The validate didn't return an error")
+	}
+}
+
+func TestUseCaseValidate_invalidJWT_shouldReturnAnError(t *testing.T) {
+	// arrange
+	publisher := &MockAuthPublisher{
+		FakeGet: func(token string) (*domain.AuthToken, error) {
+			return &domain.AuthToken{Token: token}, nil
+		},
+	}
+	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: publisher}
+
+	// act
+	authToken, authError := authorizeUseCase.Validate("not-a-jwt")
+
+	// assert
+	if authToken != nil {
+		t.Error("The validate returned a token for invalid JWT")
+	}
+	if authError == nil {
+		t.Error("The validate didn't return an error for invalid JWT")
+	}
+}
+
+func TestUseCaseValidate_validToken_shouldReturnAuthToken(t *testing.T) {
+	// arrange
+	secret := "test_secret"
+	t.Setenv("auth_secret", secret)
+	clientId := "test-client"
+
+	// Create a valid JWT
+	claims := jwt.MapClaims{
+		"client_id": clientId,
+		"exp":       time.Now().Add(time.Hour).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, _ := token.SignedString([]byte(secret))
+
+	publisher := &MockAuthPublisher{
+		FakeGet: func(token string) (*domain.AuthToken, error) {
+			return &domain.AuthToken{Token: token}, nil
+		},
+	}
+	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: publisher}
+
+	// act
+	authToken, authError := authorizeUseCase.Validate(tokenString)
+
+	// assert
+	if authError != nil {
+		t.Errorf("The validate returned an error: %v", authError)
+	}
+	if authToken == nil {
+		t.Fatal("The validate didn't return a token")
+	}
+	if authToken.ClientId != clientId {
+		t.Errorf("Expected client id %s, got %s", clientId, authToken.ClientId)
+	}
 }

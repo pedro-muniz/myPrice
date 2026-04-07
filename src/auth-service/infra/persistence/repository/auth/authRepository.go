@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
 	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
 )
 
 type AuthModel struct {
-	Id 			string 
-	Name   		string
-	Email    	string
-	Password 	string
-	Roles    	string
+	Id          string
+	Name        string
+	Email       string
+	Password    string
+	Roles       string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	LastLoginAt time.Time
@@ -43,62 +44,79 @@ func GetInstance(dao IDAO) *AuthRepository {
 	return instance
 }
 
-func (this *AuthRepository) Get(client_id string, client_secret string) (*domain.Auth, error) {
-	fmt.Println("fetching from postgres")
+func (this *AuthRepository) Get(email string, password string) (<-chan *domain.Auth, <-chan error) {
+	authChan := make(chan *domain.Auth, 1)
+	errChan := make(chan error, 1)
 
-	query := `
-		SELECT auth_id as id, name, email, password, roles, created_at, updated_at, last_login_at
-		FROM user_logins.auths 
-		WHERE auth_id = $1 AND password = $2
-	`
-	rows, err := this.dao.Read(query, client_id, client_secret)
-	if err != nil {
-		return nil, fmt.Errorf("error reading from db: %w", err)
-	}
-	defer rows.Close()
+	go func() {
+		defer close(authChan)
+		defer close(errChan)
 
-	if rows.Next() {
-		var model AuthModel
-		err := rows.Scan(&model.Id, &model.Name, &model.Email, &model.Password, 
-			&model.Roles, &model.CreatedAt, &model.UpdatedAt, &model.LastLoginAt)
-		
+		query := `
+			SELECT auth_id as id, name, email, password, roles, created_at, updated_at, last_login_at
+			FROM user_logins.auths 
+			WHERE auth_id = $1 AND password = $2
+		`
+		rows, err := this.dao.Read(query, email, password)
 		if err != nil {
-			return nil, fmt.Errorf("error scanning row: %w", err)
+			errChan <- fmt.Errorf("error reading from db: %w", err)
+			return
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			var model AuthModel
+			err := rows.Scan(&model.Id, &model.Name, &model.Email, &model.Password,
+				&model.Roles, &model.CreatedAt, &model.UpdatedAt, &model.LastLoginAt)
+
+			if err != nil {
+				errChan <- fmt.Errorf("error scanning row: %w", err)
+				return
+			}
+
+			authChan <- &domain.Auth{
+				ClientName:   model.Name,
+				ClientId:     model.Id,
+				ClientEmail:  model.Email,
+				ClientSecret: model.Password,
+				GrantType:    model.Roles,
+				CreatedAt:    model.CreatedAt,
+				UpdatedAt:    model.UpdatedAt,
+				LastLoginAt:  model.LastLoginAt,
+			}
+			return
 		}
 
-		return &domain.Auth{
-			ClientName:   model.Name,
-			ClientId:     model.Id,
-			ClientEmail:  model.Email,
-			ClientSecret: model.Password,
-			GrantType:    model.Roles,
-			CreatedAt:    model.CreatedAt,
-			UpdatedAt:    model.UpdatedAt,
-			LastLoginAt:  model.LastLoginAt,
-		}, nil
-	}
+		errChan <- fmt.Errorf("user not found")
+	}()
 
-	return nil, fmt.Errorf("user not found")
+	return authChan, errChan
 }
 
-func (this *AuthRepository) Save(auth *domain.Auth) error {
-	fmt.Println("saving to postgres")
+func (this *AuthRepository) Save(auth *domain.Auth) <-chan error {
+	errChan := make(chan error, 1)
 
-	model := AuthModel{
-		Id: 			auth.ClientId,
-		Name:     		auth.ClientName,
-		Email:    		auth.ClientEmail,
-		Password: 		auth.ClientSecret,
-		Roles:    		auth.GrantType,
-		CreatedAt:  	auth.CreatedAt,
-		UpdatedAt: 		auth.UpdatedAt,
-		LastLoginAt:	auth.LastLoginAt,
-	}
+	go func() {
+		defer close(errChan)
 
-	_, err := this.dao.Insert(model)
-	if err != nil {
-		return fmt.Errorf("error writing to db: %w", err)
-	}
+		fmt.Println("saving to postgres")
 
-	return nil
+		model := AuthModel{
+			Id:          auth.ClientId,
+			Name:        auth.ClientName,
+			Email:       auth.ClientEmail,
+			Password:    auth.ClientSecret,
+			Roles:       auth.GrantType,
+			CreatedAt:   auth.CreatedAt,
+			UpdatedAt:   auth.UpdatedAt,
+			LastLoginAt: auth.LastLoginAt,
+		}
+
+		_, err := this.dao.Insert(model)
+		if err != nil {
+			errChan <- fmt.Errorf("error writing to db: %w", err)
+		}
+	}()
+
+	return errChan
 }
