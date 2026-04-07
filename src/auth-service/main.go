@@ -2,22 +2,26 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
-	"github.com/pedro-muniz/myPrice/auth/core/domain"
-	authConfig "github.com/pedro-muniz/myPrice/auth/infra/config/auth"
+	"github.com/joho/godotenv"
+	wireConfig "github.com/pedro-muniz/myPrice/auth/infra/config/wire"
 )
 
 func main() {
-	authorizeUc := authConfig.CreateAuthorizeUseCase()
-	clientAuthentication := &domain.Auth{ClientId: "726a28ba-b07b-4848-808d-6b345448357e", ClientSecret: "teste"}
-	clientToken, err := authorizeUc.Execute(clientAuthentication)
-	if err != nil {
-		panic(err)
+	// Load environment variables from .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("Warning: .env file not found, using existing environment variables")
 	}
 
-	fmt.Printf("%+v\n", clientToken)
+	authController := wireConfig.InitializeAuthController()
 
-	clientAuthentication = &domain.Auth{ClientId: "2f546b9d-4143-4f00-accb-a2263ed52007", ClientSecret: "test3"}
-	clientToken, err = authorizeUc.Execute(clientAuthentication)
-	fmt.Printf("%+v\n", clientToken)
+	// Setup routes
+	http.HandleFunc("/authorize", authController.Authorize)
+	http.HandleFunc("/validate", authController.Validate)
+
+	fmt.Println("Server starting on :8080...")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		fmt.Printf("Error starting server: %s\n", err)
+	}
 }
