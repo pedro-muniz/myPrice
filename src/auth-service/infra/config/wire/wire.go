@@ -10,6 +10,11 @@ import (
 	"github.com/pedro-muniz/myPrice/auth/infra/delivery/controllers"
 )
 
+func InitializeAuthenticateUseCase() *authUc.Authenticate {
+	wire.Build(authConfig.ProviderSet)
+	return nil
+}
+
 func InitializeAuthorizeUseCase() *authUc.Authorize {
 	wire.Build(authConfig.ProviderSet)
 	return nil

@@ -10,7 +10,8 @@ import (
 )
 
 type AuthController struct {
-	UseCase port.IAuthorize
+	AuthenticateUseCase port.IAuthenticate
+	AuthorizeUseCase    port.IAuthorize
 }
 
 // Authorize handles client authentication and token generation
@@ -26,14 +27,14 @@ func (this *AuthController) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	domainAuth := converters.ToDomain(request)
-	authToken, err := this.UseCase.Execute(domainAuth)
+	input := converters.ToAuthenticateInput(request)
+	output, err := this.AuthenticateUseCase.Execute(input)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	response := converters.ToResponse(authToken)
+	response := converters.AuthenticateOutputToResponse(output)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -46,13 +47,13 @@ func (this *AuthController) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authToken, err := this.UseCase.Validate(token)
+	output, err := this.AuthorizeUseCase.Execute(token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	response := converters.ToResponse(authToken)
+	response := converters.AuthorizeOutputToResponse(output)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

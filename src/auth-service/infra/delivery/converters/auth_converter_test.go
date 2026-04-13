@@ -4,17 +4,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pedro-muniz/myPrice/auth/core/domain"
+	port "github.com/pedro-muniz/myPrice/auth/core/port/usecase/auth"
 	"github.com/pedro-muniz/myPrice/auth/infra/delivery/models"
 )
 
-func TestToDomain(t *testing.T) {
+func TestToAuthenticateInput(t *testing.T) {
 	request := models.AuthRequest{
 		ClientId:     "test-client",
 		ClientSecret: "test-secret",
 	}
 
-	result := ToDomain(request)
+	result := ToAuthenticateInput(request)
 
 	if result.ClientId != request.ClientId {
 		t.Errorf("Expected ClientId %s, got %s", request.ClientId, result.ClientId)
@@ -25,16 +25,34 @@ func TestToDomain(t *testing.T) {
 	}
 }
 
-func TestToResponse(t *testing.T) {
-	token := &domain.AuthToken{
+func TestAuthenticateOutputToResponse(t *testing.T) {
+	output := &port.AuthenticateOutput{
 		Token:      "test-token",
 		ExpiringIn: time.Hour,
 	}
 
-	result := ToResponse(token)
+	result := AuthenticateOutputToResponse(output)
 
-	if result.Token != token.Token {
-		t.Errorf("Expected Token %s, got %s", token.Token, result.Token)
+	if result.Token != output.Token {
+		t.Errorf("Expected Token %s, got %s", output.Token, result.Token)
+	}
+
+	expectedExp := "1h0m0s"
+	if result.ExpiringIn != expectedExp {
+		t.Errorf("Expected ExpiringIn %s, got %s", expectedExp, result.ExpiringIn)
+	}
+}
+
+func TestAuthorizeOutputToResponse(t *testing.T) {
+	output := &port.AuthorizeOutput{
+		Token:      "test-token",
+		ExpiringIn: time.Hour,
+	}
+
+	result := AuthorizeOutputToResponse(output)
+
+	if result.Token != output.Token {
+		t.Errorf("Expected Token %s, got %s", output.Token, result.Token)
 	}
 
 	expectedExp := "1h0m0s"

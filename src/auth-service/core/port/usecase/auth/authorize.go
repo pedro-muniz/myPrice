@@ -1,11 +1,6 @@
 package auth
 
-import (
-	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
-)
-
-// IAuthorize defines the behavior for the authentication use case
+// IAuthorize defines the behavior for the authorization use case (JWT token validation)
 type IAuthorize interface {
-	Execute(auth *domain.Auth) (*domain.AuthToken, error)
-	Validate(token string) (*domain.AuthToken, error)
+	Execute(token string) (*AuthorizeOutput, error)
 }

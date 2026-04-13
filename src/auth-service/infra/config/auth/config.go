@@ -22,12 +22,14 @@ var ProviderSet = wire.NewSet(
 	ProvideRedisClient,
 	ProvideAuthRepository,
 	ProvideRedisAuth,
+	ProvideAuthenticateUseCase,
 	ProvideAuthorizeUseCase,
 	ProvideAuthController,
 	// Interface bindings
 	wire.Bind(new(authRepo.IDAO), new(*postgres.DAO)),
 	wire.Bind(new(repository.IAuthRepository), new(*authRepo.AuthRepository)),
 	wire.Bind(new(publisher.AuthPublisher), new(*r.RedisAuth)),
+	wire.Bind(new(useCasePort.IAuthenticate), new(*authUc.Authenticate)),
 	wire.Bind(new(useCasePort.IAuthorize), new(*authUc.Authorize)),
 )
 
@@ -76,10 +78,14 @@ func ProvideRedisAuth(client *redis.Client) *r.RedisAuth {
 	return r.GetInstance(client)
 }
 
-func ProvideAuthorizeUseCase(repo repository.IAuthRepository, redisAuth publisher.AuthPublisher) *authUc.Authorize {
-	return authUc.GetInstance(repo, redisAuth)
+func ProvideAuthenticateUseCase(repo repository.IAuthRepository, redisAuth publisher.AuthPublisher) *authUc.Authenticate {
+	return authUc.GetAuthenticateInstance(repo, redisAuth)
 }
 
-func ProvideAuthController(useCase useCasePort.IAuthorize) *controllers.AuthController {
-	return &controllers.AuthController{UseCase: useCase}
+func ProvideAuthorizeUseCase(redisAuth publisher.AuthPublisher) *authUc.Authorize {
+	return authUc.GetInstance(redisAuth)
+}
+
+func ProvideAuthController(authenticateUseCase useCasePort.IAuthenticate, authorizeUseCase useCasePort.IAuthorize) *controllers.AuthController {
+	return &controllers.AuthController{AuthenticateUseCase: authenticateUseCase, AuthorizeUseCase: authorizeUseCase}
 }
