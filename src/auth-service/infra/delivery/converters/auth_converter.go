@@ -1,20 +1,27 @@
 package converters
 
 import (
-	"github.com/pedro-muniz/myPrice/auth/core/domain"
+	port "github.com/pedro-muniz/myPrice/auth/core/port/usecase/auth"
 	"github.com/pedro-muniz/myPrice/auth/infra/delivery/models"
 )
 
-func ToDomain(request models.AuthRequest) *domain.Auth {
-	return &domain.Auth{
+func ToAuthenticateInput(request models.AuthRequest) *port.AuthenticateInput {
+	return &port.AuthenticateInput{
 		ClientId:     request.ClientId,
 		ClientSecret: request.ClientSecret,
 	}
 }
 
-func ToResponse(token *domain.AuthToken) *models.AuthResponse {
+func AuthenticateOutputToResponse(output *port.AuthenticateOutput) *models.AuthResponse {
 	return &models.AuthResponse{
-		Token:      token.Token,
-		ExpiringIn: token.ExpiringIn.String(),
+		Token:      output.Token,
+		ExpiringIn: output.ExpiringIn.String(),
+	}
+}
+
+func AuthorizeOutputToResponse(output *port.AuthorizeOutput) *models.AuthResponse {
+	return &models.AuthResponse{
+		Token:      output.Token,
+		ExpiringIn: output.ExpiringIn.String(),
 	}
 }

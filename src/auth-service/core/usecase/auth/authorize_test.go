@@ -1,12 +1,10 @@
 package authorize
 
 import (
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	authErrors "github.com/pedro-muniz/myPrice/auth/core/customerror/auth"
 	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
 	repository "github.com/pedro-muniz/myPrice/auth/core/port/repository"
 )
@@ -64,159 +62,49 @@ func (publisher *MockAuthPublisher) Get(token string) (*domain.AuthToken, error)
 var mockedRepo *TestAuthRepository = &TestAuthRepository{}
 var mockedPub *MockAuthPublisher = &MockAuthPublisher{}
 
-func TestUseCaseExecute_invalidAuthObject_shouldReturnAnError(t *testing.T) {
-	//arrange
-	expectedError := authErrors.InvalidAuthReference("")
-	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: mockedPub}
-
-	//act
-	authToken, authError := authorizeUseCase.Execute(nil)
-
-	//assert
-	if authToken != nil {
-		t.Error("The authorize returned a strange token")
-	}
-
-	if authError == nil {
-		t.Error("The authorize didn't return the expectedError")
-	}
-
-	if expectedError != authError {
-		t.Error("The authorize didn't return the expectedError")
-	}
-
-}
-
-func TestUseCaseExecute_errorReturningDatabaseRecord_shouldReturnAnError(t *testing.T) {
-	//arrange
-	err := errors.New("error")
-	expectedError := authErrors.ErrorGettingAuthDatabaseRecord(err.Error())
-	auth := &domain.Auth{ClientId: "test", ClientSecret: "Test"}
-	repository := &TestAuthRepository{
-		FakeGet: func(email string, password string) (<-chan *domain.Auth, <-chan error) {
-			ec := make(chan error, 1)
-			ec <- err
-			return nil, ec
-		},
-	}
-
-	authorizeUseCase := &Authorize{AuthRepository: repository, AuthPublisher: mockedPub}
-
-	//act
-	authToken, authError := authorizeUseCase.Execute(auth)
-
-	//assert
-	if authToken != nil {
-		t.Error("The authorize returned a strange token")
-	}
-
-	if expectedError != authError {
-		t.Error("The authorize didn't return the expectedError")
-	}
-}
-
-func TestUseCaseExecute_clientNotFound_shouldReturnAnError(t *testing.T) {
-	//arrange
-	expectedError := authErrors.ClientNotFound("")
-	auth := &domain.Auth{ClientId: "test", ClientSecret: "Test"}
-	repository := &TestAuthRepository{
-		FakeGet: func(email string, password string) (<-chan *domain.Auth, <-chan error) {
-			ac := make(chan *domain.Auth, 1)
-			close(ac)
-			return ac, nil
-		},
-	}
-
-	authorizeUseCase := &Authorize{AuthRepository: repository, AuthPublisher: mockedPub}
-
-	//act
-	authToken, authError := authorizeUseCase.Execute(auth)
-
-	//assert
-	if authToken != nil {
-		t.Error("The authorize returned a strange token")
-	}
-
-	if expectedError != authError {
-		t.Error("The authorize didn't return the expectedError")
-	}
-}
-
-func TestUseCaseExecute_dataOk_shouldReturnAToken(t *testing.T) {
-	//arrange
-	auth := &domain.Auth{ClientId: "test", ClientSecret: "Test"}
-	repository := &TestAuthRepository{
-		FakeGet: func(email string, password string) (<-chan *domain.Auth, <-chan error) {
-			ac := make(chan *domain.Auth, 1)
-			ac <- auth
-			return ac, nil
-		},
-	}
-
-	authorizeUseCase := &Authorize{AuthRepository: repository, AuthPublisher: mockedPub}
-
-	//act
-	authToken, _ := authorizeUseCase.Execute(auth)
-
-	//assert
-	if authToken == nil || len(authToken.Token) <= 0 {
-		t.Error("The authorize didn't return the token")
-	}
-
-	if len(authToken.ClientId) <= 0 {
-		t.Error("The authorize didn't return the clientId")
-	}
-
-	if authToken.ExpiringIn <= 0 {
-		t.Error("The authorize didn't return the ExpiringIn")
-	}
-
-	t.Log(authToken.Token)
-}
-
-func TestUseCaseValidate_tokenNotFoundInRedis_shouldReturnAnError(t *testing.T) {
+func TestAuthorizeExecute_tokenNotFoundInRedis_shouldReturnAnError(t *testing.T) {
 	// arrange
 	publisher := &MockAuthPublisher{
 		FakeGet: func(token string) (*domain.AuthToken, error) {
 			return nil, nil // Not found
 		},
 	}
-	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: publisher}
+	authorizeUseCase := &Authorize{AuthPublisher: publisher}
 
 	// act
-	authToken, authError := authorizeUseCase.Validate("any-token")
+	authToken, authError := authorizeUseCase.Execute("any-token")
 
 	// assert
 	if authToken != nil {
-		t.Error("The validate returned a token when it should not")
+		t.Error("The authorize returned a token when it should not")
 	}
 	if authError == nil {
-		t.Error("The validate didn't return an error")
+		t.Error("The authorize didn't return an error")
 	}
 }
 
-func TestUseCaseValidate_invalidJWT_shouldReturnAnError(t *testing.T) {
+func TestAuthorizeExecute_invalidJWT_shouldReturnAnError(t *testing.T) {
 	// arrange
 	publisher := &MockAuthPublisher{
 		FakeGet: func(token string) (*domain.AuthToken, error) {
 			return &domain.AuthToken{Token: token}, nil
 		},
 	}
-	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: publisher}
+	authorizeUseCase := &Authorize{AuthPublisher: publisher}
 
 	// act
-	authToken, authError := authorizeUseCase.Validate("not-a-jwt")
+	authToken, authError := authorizeUseCase.Execute("not-a-jwt")
 
 	// assert
 	if authToken != nil {
-		t.Error("The validate returned a token for invalid JWT")
+		t.Error("The authorize returned a token for invalid JWT")
 	}
 	if authError == nil {
-		t.Error("The validate didn't return an error for invalid JWT")
+		t.Error("The authorize didn't return an error for invalid JWT")
 	}
 }
 
-func TestUseCaseValidate_validToken_shouldReturnAuthToken(t *testing.T) {
+func TestAuthorizeExecute_validToken_shouldReturnAuthToken(t *testing.T) {
 	// arrange
 	secret := "test_secret"
 	t.Setenv("auth_secret", secret)
@@ -235,17 +123,17 @@ func TestUseCaseValidate_validToken_shouldReturnAuthToken(t *testing.T) {
 			return &domain.AuthToken{Token: token}, nil
 		},
 	}
-	authorizeUseCase := &Authorize{AuthRepository: mockedRepo, AuthPublisher: publisher}
+	authorizeUseCase := &Authorize{AuthPublisher: publisher}
 
 	// act
-	authToken, authError := authorizeUseCase.Validate(tokenString)
+	authToken, authError := authorizeUseCase.Execute(tokenString)
 
 	// assert
 	if authError != nil {
-		t.Errorf("The validate returned an error: %v", authError)
+		t.Errorf("The authorize returned an error: %v", authError)
 	}
 	if authToken == nil {
-		t.Fatal("The validate didn't return a token")
+		t.Fatal("The authorize didn't return a token")
 	}
 	if authToken.ClientId != clientId {
 		t.Errorf("Expected client id %s, got %s", clientId, authToken.ClientId)

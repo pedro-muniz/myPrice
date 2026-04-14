@@ -9,37 +9,40 @@ import (
 	"testing"
 	"time"
 
-	domain "github.com/pedro-muniz/myPrice/auth/core/domain"
+	port "github.com/pedro-muniz/myPrice/auth/core/port/usecase/auth"
 	"github.com/pedro-muniz/myPrice/auth/infra/delivery/models"
 )
 
-type MockAuthorize struct {
-	FakeExecute  func(auth *domain.Auth) (*domain.AuthToken, error)
-	FakeValidate func(token string) (*domain.AuthToken, error)
+type MockAuthenticate struct {
+	FakeExecute func(input *port.AuthenticateInput) (*port.AuthenticateOutput, error)
 }
 
-func (m *MockAuthorize) Execute(auth *domain.Auth) (*domain.AuthToken, error) {
+func (m *MockAuthenticate) Execute(input *port.AuthenticateInput) (*port.AuthenticateOutput, error) {
 	if m.FakeExecute != nil {
-		return m.FakeExecute(auth)
+		return m.FakeExecute(input)
 	}
 	return nil, nil
 }
 
-func (m *MockAuthorize) Validate(token string) (*domain.AuthToken, error) {
-	if m.FakeValidate != nil {
-		return m.FakeValidate(token)
+type MockAuthorize struct {
+	FakeExecute func(token string) (*port.AuthorizeOutput, error)
+}
+
+func (m *MockAuthorize) Execute(token string) (*port.AuthorizeOutput, error) {
+	if m.FakeExecute != nil {
+		return m.FakeExecute(token)
 	}
 	return nil, nil
 }
 
 func TestAuthController_Authorize(t *testing.T) {
 	t.Run("should return 200 and token on success", func(t *testing.T) {
-		mockUseCase := &MockAuthorize{
-			FakeExecute: func(auth *domain.Auth) (*domain.AuthToken, error) {
-				return &domain.AuthToken{Token: "test-token", ExpiringIn: time.Hour}, nil
+		mockUseCase := &MockAuthenticate{
+			FakeExecute: func(input *port.AuthenticateInput) (*port.AuthenticateOutput, error) {
+				return &port.AuthenticateOutput{Token: "test-token", ExpiringIn: time.Hour}, nil
 			},
 		}
-		controller := &AuthController{UseCase: mockUseCase}
+		controller := &AuthController{AuthenticateUseCase: mockUseCase}
 
 		body, _ := json.Marshal(models.AuthRequest{ClientId: "id", ClientSecret: "secret"})
 		req, _ := http.NewRequest(http.MethodPost, "/authorize", bytes.NewBuffer(body))
@@ -59,7 +62,7 @@ func TestAuthController_Authorize(t *testing.T) {
 	})
 
 	t.Run("should return 405 for invalid method", func(t *testing.T) {
-		controller := &AuthController{UseCase: &MockAuthorize{}}
+		controller := &AuthController{AuthenticateUseCase: &MockAuthenticate{}}
 		req, _ := http.NewRequest(http.MethodGet, "/authorize", nil)
 		rr := httptest.NewRecorder()
 
@@ -71,12 +74,12 @@ func TestAuthController_Authorize(t *testing.T) {
 	})
 
 	t.Run("should return 401 on use case error", func(t *testing.T) {
-		mockUseCase := &MockAuthorize{
-			FakeExecute: func(auth *domain.Auth) (*domain.AuthToken, error) {
+		mockUseCase := &MockAuthenticate{
+			FakeExecute: func(input *port.AuthenticateInput) (*port.AuthenticateOutput, error) {
 				return nil, errors.New("unauthorized")
 			},
 		}
-		controller := &AuthController{UseCase: mockUseCase}
+		controller := &AuthController{AuthenticateUseCase: mockUseCase}
 
 		body, _ := json.Marshal(models.AuthRequest{ClientId: "id", ClientSecret: "secret"})
 		req, _ := http.NewRequest(http.MethodPost, "/authorize", bytes.NewBuffer(body))
@@ -93,11 +96,11 @@ func TestAuthController_Authorize(t *testing.T) {
 func TestAuthController_Validate(t *testing.T) {
 	t.Run("should return 200 and token on success", func(t *testing.T) {
 		mockUseCase := &MockAuthorize{
-			FakeValidate: func(token string) (*domain.AuthToken, error) {
-				return &domain.AuthToken{Token: token, ClientId: "test-client"}, nil
+			FakeExecute: func(token string) (*port.AuthorizeOutput, error) {
+				return &port.AuthorizeOutput{Token: token, ClientId: "test-client"}, nil
 			},
 		}
-		controller := &AuthController{UseCase: mockUseCase}
+		controller := &AuthController{AuthorizeUseCase: mockUseCase}
 
 		req, _ := http.NewRequest(http.MethodGet, "/validate?token=valid-token", nil)
 		rr := httptest.NewRecorder()
@@ -116,7 +119,7 @@ func TestAuthController_Validate(t *testing.T) {
 	})
 
 	t.Run("should return 400 if token query param is missing", func(t *testing.T) {
-		controller := &AuthController{UseCase: &MockAuthorize{}}
+		controller := &AuthController{AuthorizeUseCase: &MockAuthorize{}}
 		req, _ := http.NewRequest(http.MethodGet, "/validate", nil)
 		rr := httptest.NewRecorder()
 
@@ -129,11 +132,11 @@ func TestAuthController_Validate(t *testing.T) {
 
 	t.Run("should return 401 on use case error", func(t *testing.T) {
 		mockUseCase := &MockAuthorize{
-			FakeValidate: func(token string) (*domain.AuthToken, error) {
+			FakeExecute: func(token string) (*port.AuthorizeOutput, error) {
 				return nil, errors.New("invalid token")
 			},
 		}
-		controller := &AuthController{UseCase: mockUseCase}
+		controller := &AuthController{AuthorizeUseCase: mockUseCase}
 
 		req, _ := http.NewRequest(http.MethodGet, "/validate?token=invalid", nil)
 		rr := httptest.NewRecorder()
