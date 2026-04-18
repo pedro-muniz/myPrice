@@ -1,0 +1,77 @@
+package domain
+
+import (
+	"errors"
+	"time"
+)
+
+type Origin int
+
+const (
+	National Origin = iota
+	Imported
+)
+
+type Product struct {
+	Id            string
+	BarCode       string
+	Name          string
+	Description   string
+	Discount      float64
+	Price         Price
+	ProfitPercent float64
+	Origin        Origin
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+func NewProduct(barCode string, name string, description string,
+	discount float64, price Price, profitPercent float64,
+	origin Origin) *Product {
+
+	return &Product{
+		BarCode:       barCode,
+		Name:          name,
+		Description:   description,
+		Discount:      discount,
+		Price:         price,
+		ProfitPercent: profitPercent,
+		Origin:        origin,
+	}
+}
+
+func (this *Product) Validate() error {
+	if len(this.Id) <= 0 {
+		return errors.New("invalid product id")
+	}
+
+	if len(this.BarCode) <= 0 {
+		return errors.New("invalid product barcode")
+	}
+
+	if len(this.Name) <= 0 {
+		return errors.New("invalid product name")
+	}
+
+	if len(this.Description) <= 0 {
+		return errors.New("invalid product description")
+	}
+
+	if this.Origin < National || this.Origin > Imported {
+		return errors.New("invalid product origin")
+	}
+
+	if this.Price.Validate() != nil {
+		return errors.New("invalid product price")
+	}
+
+	if this.CreatedAt.IsZero() {
+		return errors.New("invalid product created at")
+	}
+
+	if this.UpdatedAt.IsZero() {
+		return errors.New("invalid product updated at")
+	}
+
+	return nil
+}
