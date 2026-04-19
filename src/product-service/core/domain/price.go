@@ -25,10 +25,6 @@ func NewPrice(gross float64, net float64, selling float64, recommended float64) 
 }
 
 func (this *Price) Validate() error {
-	if len(this.Id) <= 0 {
-		return errors.New("invalid price id")
-	}
-
 	if this.Gross <= 0 {
 		return errors.New("invalid price gross")
 	}

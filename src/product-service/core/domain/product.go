@@ -41,10 +41,6 @@ func NewProduct(barCode string, name string, description string,
 }
 
 func (this *Product) Validate() error {
-	if len(this.Id) <= 0 {
-		return errors.New("invalid product id")
-	}
-
 	if len(this.BarCode) <= 0 {
 		return errors.New("invalid product barcode")
 	}
