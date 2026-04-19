@@ -53,6 +53,10 @@ func (this *ProductManagement) Create(input *port.CreateInput) (*port.CreateOutp
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
 
+	if err := product.Validate(); err != nil {
+		return nil, productErrors.InvalidProductData(err.Error())
+	}
+
 	productChan, errChan := this.ProductRepository.Save(product)
 
 	var savedProduct *domain.Product
@@ -158,6 +162,10 @@ func (this *ProductManagement) Update(input *port.UpdateInput) (*port.UpdateOutp
 	existingProduct.Price.Selling = input.Selling
 	existingProduct.Price.Recommended = input.Recommended
 	existingProduct.Price.UpdatedAt = time.Now()
+
+	if err := existingProduct.Validate(); err != nil {
+		return nil, productErrors.InvalidProductData(err.Error())
+	}
 
 	errChan := this.ProductRepository.Update(existingProduct)
 

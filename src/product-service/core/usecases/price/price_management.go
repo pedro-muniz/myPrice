@@ -41,6 +41,10 @@ func (this *PriceManagement) Create(input *port.CreateInput) (*port.CreateOutput
 	price.CreatedAt = time.Now()
 	price.UpdatedAt = time.Now()
 
+	if err := price.Validate(); err != nil {
+		return nil, priceErrors.InvalidPriceData(err.Error())
+	}
+
 	priceChan, errChan := this.PriceRepository.Save(price)
 
 	var savedPrice *domain.Price
@@ -138,6 +142,10 @@ func (this *PriceManagement) Update(input *port.UpdateInput) (*port.UpdateOutput
 	existingPrice.Selling = input.Selling
 	existingPrice.Recommended = input.Recommended
 	existingPrice.UpdatedAt = time.Now()
+
+	if err := existingPrice.Validate(); err != nil {
+		return nil, priceErrors.InvalidPriceData(err.Error())
+	}
 
 	errChan := this.PriceRepository.Update(existingPrice)
 
