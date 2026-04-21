@@ -1,22 +1,12 @@
-package product
+package branch
 
 import (
 	domain "github.com/pedro-muniz/myPrice/src/product-service/core/domain"
 )
 
 type CreateInput struct {
-	CompanyId     string
-	BranchId      string
-	BarCode       string
-	Name          string
-	Description   string
-	Discount      float64
-	ProfitPercent float64
-	Origin        int
-	Gross         float64
-	Net           float64
-	Selling       float64
-	Recommended   float64
+	CompanyId string
+	Name      string
 }
 
 type CreateOutput struct {
@@ -25,37 +15,25 @@ type CreateOutput struct {
 
 type GetInput struct {
 	CompanyId string
-	BranchId  string
 	Id        string
 }
 
 type GetOutput struct {
-	Product *domain.Product
+	Branch *domain.Branch
 }
 
 type ListInput struct {
 	CompanyId string
-	BranchId  string
 }
 
 type ListOutput struct {
-	Products []*domain.Product
+	Branches []*domain.Branch
 }
 
 type UpdateInput struct {
-	CompanyId     string
-	BranchId      string
-	Id            string
-	BarCode       string
-	Name          string
-	Description   string
-	Discount      float64
-	ProfitPercent float64
-	Origin        int
-	Gross         float64
-	Net           float64
-	Selling       float64
-	Recommended   float64
+	CompanyId string
+	Id        string
+	Name      string
 }
 
 type UpdateOutput struct {
@@ -64,7 +42,6 @@ type UpdateOutput struct {
 
 type DeleteInput struct {
 	CompanyId string
-	BranchId  string
 	Id        string
 }
 
@@ -72,7 +49,7 @@ type DeleteOutput struct {
 	Success bool
 }
 
-type IProductManagement interface {
+type IBranchManagement interface {
 	Create(input *CreateInput) (*CreateOutput, error)
 	Get(input *GetInput) (*GetOutput, error)
 	List(input *ListInput) (*ListOutput, error)
