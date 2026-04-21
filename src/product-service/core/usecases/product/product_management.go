@@ -33,6 +33,8 @@ func (this *ProductManagement) Create(input *port.CreateInput) (*port.CreateOutp
 	}
 
 	price := domain.Price{
+		CompanyId:   input.CompanyId,
+		BranchId:    input.BranchId,
 		Gross:       input.Gross,
 		Net:         input.Net,
 		Selling:     input.Selling,
@@ -42,6 +44,8 @@ func (this *ProductManagement) Create(input *port.CreateInput) (*port.CreateOutp
 	}
 
 	product := domain.NewProduct(
+		input.CompanyId,
+		input.BranchId,
 		input.BarCode,
 		input.Name,
 		input.Description,
@@ -85,7 +89,7 @@ func (this *ProductManagement) Get(input *port.GetInput) (*port.GetOutput, error
 		return nil, productErrors.InvalidProductData("invalid id")
 	}
 
-	productChan, errChan := this.ProductRepository.FindById(input.Id)
+	productChan, errChan := this.ProductRepository.FindById(input.CompanyId, input.BranchId, input.Id)
 
 	var product *domain.Product
 	var err error
@@ -109,7 +113,10 @@ func (this *ProductManagement) Get(input *port.GetInput) (*port.GetOutput, error
 }
 
 func (this *ProductManagement) List(input *port.ListInput) (*port.ListOutput, error) {
-	productsChan, errChan := this.ProductRepository.FindAll()
+	if input == nil {
+		return nil, productErrors.InvalidProductData("nil input")
+	}
+	productsChan, errChan := this.ProductRepository.FindAll(input.CompanyId, input.BranchId)
 
 	var products []*domain.Product
 	var err error
@@ -133,7 +140,7 @@ func (this *ProductManagement) Update(input *port.UpdateInput) (*port.UpdateOutp
 		return nil, productErrors.InvalidProductData("invalid id")
 	}
 
-	productChan, findErrChan := this.ProductRepository.FindById(input.Id)
+	productChan, findErrChan := this.ProductRepository.FindById(input.CompanyId, input.BranchId, input.Id)
 	var existingProduct *domain.Product
 	var findErr error
 
@@ -184,7 +191,14 @@ func (this *ProductManagement) Delete(input *port.DeleteInput) (*port.DeleteOutp
 		return nil, productErrors.InvalidProductData("invalid id")
 	}
 
-	errChan := this.ProductRepository.Delete(input.Id)
+	product := &domain.Product{
+		Id:        input.Id,
+		CompanyId: input.CompanyId,
+		BranchId:  input.BranchId,
+	}
+	product.Delete()
+
+	errChan := this.ProductRepository.Delete(product.CompanyId, product.BranchId, product.Id, *product.DeletedAt)
 
 	var err error = <-errChan
 	if err != nil {

@@ -14,6 +14,8 @@ const (
 
 type Product struct {
 	Id            string
+	CompanyId     string
+	BranchId      string
 	BarCode       string
 	Name          string
 	Description   string
@@ -23,13 +25,17 @@ type Product struct {
 	Origin        Origin
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	DeletedAt     *time.Time
 }
 
-func NewProduct(barCode string, name string, description string,
+func NewProduct(companyId string, branchId string, barCode string,
+	name string, description string,
 	discount float64, price Price, profitPercent float64,
 	origin Origin) *Product {
 
 	return &Product{
+		CompanyId:     companyId,
+		BranchId:      branchId,
 		BarCode:       barCode,
 		Name:          name,
 		Description:   description,
@@ -41,6 +47,14 @@ func NewProduct(barCode string, name string, description string,
 }
 
 func (this *Product) Validate() error {
+	if len(this.CompanyId) <= 0 {
+		return errors.New("invalid product company id")
+	}
+
+	if len(this.BranchId) <= 0 {
+		return errors.New("invalid product branch id")
+	}
+
 	if len(this.BarCode) <= 0 {
 		return errors.New("invalid product barcode")
 	}
@@ -70,4 +84,9 @@ func (this *Product) Validate() error {
 	}
 
 	return nil
+}
+func (this *Product) Delete() {
+	now := time.Now()
+	this.DeletedAt = &now
+	this.Price.Delete()
 }

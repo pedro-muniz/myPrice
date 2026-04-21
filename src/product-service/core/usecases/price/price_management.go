@@ -32,7 +32,13 @@ func (this *PriceManagement) Create(input *port.CreateInput) (*port.CreateOutput
 		return nil, priceErrors.InvalidPriceData("nil input")
 	}
 
+	if input.Gross <= 0 || input.Net <= 0 || input.Selling <= 0 || input.Recommended <= 0 {
+		return nil, priceErrors.InvalidPriceData("all price values must be positive")
+	}
+
 	price := domain.NewPrice(
+		input.CompanyId,
+		input.BranchId,
 		input.Gross,
 		input.Net,
 		input.Selling,
@@ -73,7 +79,7 @@ func (this *PriceManagement) Get(input *port.GetInput) (*port.GetOutput, error) 
 		return nil, priceErrors.InvalidPriceData("invalid id")
 	}
 
-	priceChan, errChan := this.PriceRepository.FindById(input.Id)
+	priceChan, errChan := this.PriceRepository.FindById(input.CompanyId, input.BranchId, input.Id)
 
 	var price *domain.Price
 	var err error
@@ -97,7 +103,10 @@ func (this *PriceManagement) Get(input *port.GetInput) (*port.GetOutput, error) 
 }
 
 func (this *PriceManagement) List(input *port.ListInput) (*port.ListOutput, error) {
-	pricesChan, errChan := this.PriceRepository.FindAll()
+	if input == nil {
+		return nil, priceErrors.InvalidPriceData("nil input")
+	}
+	pricesChan, errChan := this.PriceRepository.FindAll(input.CompanyId, input.BranchId)
 
 	var prices []*domain.Price
 	var err error
@@ -121,7 +130,7 @@ func (this *PriceManagement) Update(input *port.UpdateInput) (*port.UpdateOutput
 		return nil, priceErrors.InvalidPriceData("invalid id")
 	}
 
-	priceChan, findErrChan := this.PriceRepository.FindById(input.Id)
+	priceChan, findErrChan := this.PriceRepository.FindById(input.CompanyId, input.BranchId, input.Id)
 	var existingPrice *domain.Price
 	var findErr error
 
@@ -135,6 +144,10 @@ func (this *PriceManagement) Update(input *port.UpdateInput) (*port.UpdateOutput
 	}
 	if existingPrice == nil {
 		return nil, priceErrors.PriceNotFound(input.Id)
+	}
+
+	if input.Gross <= 0 || input.Net <= 0 || input.Selling <= 0 || input.Recommended <= 0 {
+		return nil, priceErrors.InvalidPriceData("all price values must be positive")
 	}
 
 	existingPrice.Gross = input.Gross
@@ -164,7 +177,14 @@ func (this *PriceManagement) Delete(input *port.DeleteInput) (*port.DeleteOutput
 		return nil, priceErrors.InvalidPriceData("invalid id")
 	}
 
-	errChan := this.PriceRepository.Delete(input.Id)
+	price := &domain.Price{
+		Id:        input.Id,
+		CompanyId: input.CompanyId,
+		BranchId:  input.BranchId,
+	}
+	price.Delete()
+
+	errChan := this.PriceRepository.Delete(price.CompanyId, price.BranchId, price.Id, *price.DeletedAt)
 
 	var err error = <-errChan
 	if err != nil {

@@ -1,16 +1,11 @@
-package price
+package company
 
 import (
 	domain "github.com/pedro-muniz/myPrice/src/product-service/core/domain"
 )
 
 type CreateInput struct {
-	CompanyId   string
-	BranchId    string
-	Gross       float64
-	Net         float64
-	Selling     float64
-	Recommended float64
+	Name string
 }
 
 type CreateOutput struct {
@@ -18,32 +13,22 @@ type CreateOutput struct {
 }
 
 type GetInput struct {
-	CompanyId string
-	BranchId  string
-	Id        string
+	Id string
 }
 
 type GetOutput struct {
-	Price *domain.Price
+	Company *domain.Company
 }
 
-type ListInput struct {
-	CompanyId string
-	BranchId  string
-}
+type ListInput struct{}
 
 type ListOutput struct {
-	Prices []*domain.Price
+	Companies []*domain.Company
 }
 
 type UpdateInput struct {
-	CompanyId   string
-	BranchId    string
-	Id          string
-	Gross       float64
-	Net         float64
-	Selling     float64
-	Recommended float64
+	Id   string
+	Name string
 }
 
 type UpdateOutput struct {
@@ -51,16 +36,14 @@ type UpdateOutput struct {
 }
 
 type DeleteInput struct {
-	CompanyId string
-	BranchId  string
-	Id        string
+	Id string
 }
 
 type DeleteOutput struct {
 	Success bool
 }
 
-type IPriceManagement interface {
+type ICompanyManagement interface {
 	Create(input *CreateInput) (*CreateOutput, error)
 	Get(input *GetInput) (*GetOutput, error)
 	List(input *ListInput) (*ListOutput, error)
