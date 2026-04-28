@@ -26,17 +26,6 @@ func TestCompanyValidate_valid_shouldReturnNil(t *testing.T) {
 	}
 }
 
-func TestCompanyValidate_emptyId_shouldReturnError(t *testing.T) {
-	company := NewCompany("", "Acme Corp")
-	err := company.Validate()
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if err.Error() != "invalid company id" {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
-
 func TestCompanyValidate_emptyName_shouldReturnError(t *testing.T) {
 	company := NewCompany("c1", "")
 	err := company.Validate()

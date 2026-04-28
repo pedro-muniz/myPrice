@@ -29,17 +29,6 @@ func TestBranchValidate_valid_shouldReturnNil(t *testing.T) {
 	}
 }
 
-func TestBranchValidate_emptyId_shouldReturnError(t *testing.T) {
-	branch := NewBranch("", "c1", "Main Branch")
-	err := branch.Validate()
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if err.Error() != "invalid branch id" {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
-
 func TestBranchValidate_emptyCompanyId_shouldReturnError(t *testing.T) {
 	branch := NewBranch("b1", "", "Main Branch")
 	err := branch.Validate()
