@@ -7,13 +7,13 @@ export
 
 # Flyway configuration
 FLYWAY_IMAGE = flyway/flyway:latest
-FLYWAY_COMMAND = docker run --rm --network="host" -v $(PWD)/flyway/sql:/flyway/sql $(FLYWAY_IMAGE) -url=$(postgres_host)$(postgres_db) -user=$(postgres_user) -password=$(postgres_pass) -locations=filesystem:/flyway/sql -schemas=service -connectRetries=60
+FLYWAY_COMMAND = docker run --rm --network="host" -v $(PWD)/flyway/sql:/flyway/sql $(FLYWAY_IMAGE) -url=$(postgres_host_flyway)$(postgres_db) -user=$(postgres_user) -password=$(postgres_pass) -locations=filesystem:/flyway/sql -schemas=service -connectRetries=60
 
 build:
 	go build ./...
 
 test:
-	go test -v ./...
+	rtk test "go test -v ./..."
 
 coverage:
 	go test -v -coverprofile=coverage.out ./...
